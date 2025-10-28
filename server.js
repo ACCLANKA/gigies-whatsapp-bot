@@ -11,6 +11,13 @@ const multer = require('multer');
 const fs = require('fs');
 require('dotenv').config();
 
+// Ensure data directory exists
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('✅ Created data directory:', dataDir);
+}
+
 // Import Ollama AI
 const OllamaAI = require('./utils/ollama');
 const ollamaAI = new OllamaAI();
@@ -36,12 +43,24 @@ const ADMIN_PASSWORD = '123456';
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(session({
-  secret: 'abc-company-secret-key-' + Math.random(),
+// Session configuration - use environment-based secret
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'gigies-secret-key-' + Date.now(),
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
-}));
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true
+  }
+};
+
+// Use MemoryStore only in development (with warning)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('⚠️  Using MemoryStore for sessions (development only)');
+}
+
+app.use(session(sessionConfig));
 
 // Authentication middleware
 function requireAuth(req, res, next) {
@@ -133,8 +152,46 @@ const upload = multer({
   }
 });
 
-// Database setup
-const db = new sqlite3.Database('./wa-bot.db');
+// Database setup with proper path and error handling
+// Ensure data directory exists (for persistent storage)
+const dbDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dbDir)) {
+  try {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log('✅ Created database directory:', dbDir);
+  } catch (err) {
+    console.error('⚠️  Could not create data directory:', err.message);
+  }
+}
+
+// Use persistent DB if possible, fallback to in-memory for read-only filesystems
+let dbPath;
+let db;
+
+try {
+  dbPath = path.join(dbDir, 'wa-bot.db');
+  console.log('📁 Attempting database path:', dbPath);
+  
+  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+    if (err) {
+      console.error('⚠️  Persistent DB failed, using in-memory:', err.message);
+      // Fallback to in-memory database for read-only filesystems (like some cloud platforms)
+      db = new sqlite3.Database(':memory:', (memErr) => {
+        if (memErr) {
+          console.error('❌ Database initialization failed completely:', memErr);
+          process.exit(1);
+        }
+        console.log('✅ Using in-memory SQLite database (data will not persist)');
+      });
+    } else {
+      console.log('✅ Connected to persistent SQLite database');
+    }
+  });
+} catch (error) {
+  console.error('⚠️  Database error, using in-memory fallback:', error.message);
+  db = new sqlite3.Database(':memory:');
+  console.log('✅ Using in-memory SQLite database');
+}
 
 // Initialize database tables
 db.serialize(() => {

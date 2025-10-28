@@ -9,12 +9,15 @@ yarn-error.log*
 .env.local
 .env.production
 
-# Database
+# Database files (but keep directory structure)
 *.db
 *.sqlite
 *.sqlite3
-data/
+data/*.db
+data/*.sqlite*
 sessions/
+wa-session/
+!data/.gitkeep
 
 # WhatsApp authentication
 .wwebjs_auth/
