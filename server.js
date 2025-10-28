@@ -55,9 +55,10 @@ const sessionConfig = {
   }
 };
 
-// Use MemoryStore only in development (with warning)
-if (process.env.NODE_ENV !== 'production') {
-  console.log('⚠️  Using MemoryStore for sessions (development only)');
+// MemoryStore is fine for single-instance deployments
+// For multi-instance, use Redis or other distributed session store
+if (process.env.NODE_ENV === 'production') {
+  console.log('📝 Using MemoryStore (suitable for single-instance deployment)');
 }
 
 app.use(session(sessionConfig));
@@ -153,34 +154,44 @@ const upload = multer({
 });
 
 // Database setup with proper path and error handling
-// Try persistent DB first, fallback to in-memory if filesystem is read-only
+// Try multiple locations for database file
 let db;
 let usingInMemory = false;
+const possibleDbPaths = [
+  path.join(__dirname, 'data', 'wa-bot.db'),
+  path.join('/tmp', 'wa-bot.db'),
+  path.join(process.env.HOME || '/tmp', 'wa-bot-data', 'wa-bot.db')
+];
 
-// Ensure data directory exists
-const dbDir = path.join(__dirname, 'data');
-try {
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-    console.log('✅ Created database directory');
+let dbInitialized = false;
+
+for (const dbPath of possibleDbPaths) {
+  try {
+    const dbDir = path.dirname(dbPath);
+    
+    // Ensure directory exists
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
+    // Test write permissions
+    const testFile = path.join(dbDir, '.write-test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    
+    // Directory is writable, create database
+    db = new sqlite3.Database(dbPath);
+    console.log('✅ Database initialized at:', dbPath);
+    dbInitialized = true;
+    break;
+  } catch (error) {
+    console.log('⚠️  Cannot use path:', dbPath, '-', error.message);
   }
-  
-  // Try to create persistent database
-  const dbPath = path.join(dbDir, 'wa-bot.db');
-  console.log('📁 Database path:', dbPath);
-  
-  // Test if we can write to the directory
-  const testFile = path.join(dbDir, '.write-test');
-  fs.writeFileSync(testFile, 'test');
-  fs.unlinkSync(testFile);
-  
-  // Directory is writable, use persistent DB
-  db = new sqlite3.Database(dbPath);
-  console.log('✅ Using persistent SQLite database');
-} catch (error) {
-  // Filesystem is read-only or error occurred, use in-memory database
-  console.error('⚠️  Cannot use persistent storage:', error.message);
-  console.log('📝 Using in-memory database (data will not persist between restarts)');
+}
+
+if (!dbInitialized) {
+  // All locations failed, use in-memory database
+  console.log('📝 Using in-memory SQLite database (data will not persist)');
   db = new sqlite3.Database(':memory:');
   usingInMemory = true;
 }
@@ -1347,10 +1358,18 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`WhatsApp Bot Server running on port ${PORT}`);
+// Start server - bind to 0.0.0.0 for Docker/cloud deployments
+const HOST = process.env.HOST || '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  console.log(`✅ WhatsApp Bot Server running on ${HOST}:${PORT}`);
+  console.log(`🌐 Health check: http://${HOST}:${PORT}/health`);
   initializeClient();
+});
+
+// Handle server startup errors
+server.on('error', (error) => {
+  console.error('❌ Server failed to start:', error);
+  process.exit(1);
 });
 
 // Graceful shutdown
