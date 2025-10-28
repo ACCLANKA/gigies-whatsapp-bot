@@ -1,0 +1,73 @@
+# Digital Ocean App Platform Configuration
+name: gigies-whatsapp-bot
+region: nyc
+
+# For multi-tenant: This will be duplicated per user
+services:
+  - name: web
+    github:
+      repo: your-username/gigies-whatsapp-bot
+      branch: main
+      deploy_on_push: true
+    
+    # Build configuration
+    build_command: npm install
+    
+    # Run configuration
+    run_command: node server.js
+    
+    # Environment
+    environment_slug: node-js
+    
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    # basic-xxs: $5/month - 512MB RAM, 1 vCPU
+    # basic-xs: $12/month - 1GB RAM, 1 vCPU
+    # basic-s: $25/month - 2GB RAM, 2 vCPU
+    
+    # HTTP configuration
+    http_port: 3000
+    
+    # Health check
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 3
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # Environment variables (will be set via API for each user)
+    envs:
+      - key: PORT
+        value: "3000"
+      
+      - key: NODE_ENV
+        value: "production"
+      
+      - key: COMPANY_NAME
+        value: "${COMPANY_NAME}"
+      
+      - key: COMPANY_SLUG
+        value: "${COMPANY_SLUG}"
+      
+      - key: CUSTOMER_SLUG
+        value: "${CUSTOMER_SLUG}"
+      
+      - key: OLLAMA_HOST
+        value: "http://37.60.242.244:11434"
+        # For centralized Ollama server
+      
+      - key: OLLAMA_CLOUD
+        value: "false"
+      
+      - key: OLLAMA_MODEL
+        value: "qwen2.5-coder:32b"
+
+# Database - Each app gets its own managed database
+databases:
+  - name: db
+    engine: PG
+    production: false
+    # production: true for paid plan ($7/month)

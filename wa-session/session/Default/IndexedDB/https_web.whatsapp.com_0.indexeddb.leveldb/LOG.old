@@ -1,0 +1,19 @@
+2025/10/28-14:34:17.387 cc970 Reusing MANIFEST /opt/wa-bots/gigies/wa-session/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/10/28-14:34:17.390 cc970 Recovering log #432
+2025/10/28-14:34:17.496 cc970 Reusing old log /opt/wa-bots/gigies/wa-session/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000432.log 
+2025/10/28-14:34:20.023 cc9af Level-0 table #440: started
+2025/10/28-14:34:20.044 cc9af Level-0 table #440: 345923 bytes OK
+2025/10/28-14:34:20.059 cc9af Delete type=0 #432
+2025/10/28-14:34:20.060 cc9af Manual compaction at level-0 from '\x00g\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00h\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/10/28-14:34:26.996 cc9af Compacting 1@1 + 4@2 files
+2025/10/28-14:34:27.246 cc9af Generated table #441@1: 89978 keys, 2241552 bytes
+2025/10/28-14:34:27.400 cc9af Generated table #442@1: 43187 keys, 2226498 bytes
+2025/10/28-14:34:27.563 cc9af Generated table #443@1: 13602 keys, 2155865 bytes
+2025/10/28-14:34:27.680 cc9af Generated table #444@1: 41118 keys, 1140483 bytes
+2025/10/28-14:34:27.680 cc9af Compacted 1@1 + 4@2 files => 7764398 bytes
+2025/10/28-14:34:27.683 cc9af compacted to: files[ 0 0 4 0 0 0 0 ]
+2025/10/28-14:34:27.683 cc9af Delete type=2 #437
+2025/10/28-14:34:27.683 cc9af Delete type=2 #435
+2025/10/28-14:34:27.683 cc9af Delete type=2 #434
+2025/10/28-14:34:27.683 cc9af Delete type=2 #436
+2025/10/28-14:34:27.683 cc9af Delete type=2 #440

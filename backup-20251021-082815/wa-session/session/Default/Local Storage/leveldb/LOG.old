@@ -1,0 +1,6 @@
+2025/10/21-04:39:42.319 33a95 Reusing MANIFEST /opt/wa-bot/wa-session/session/Default/Local Storage/leveldb/MANIFEST-000001
+2025/10/21-04:39:42.320 33a95 Recovering log #25
+2025/10/21-04:39:42.323 33a95 Reusing old log /opt/wa-bot/wa-session/session/Default/Local Storage/leveldb/000025.log 
+2025/10/21-04:40:42.996 33aa1 Level-0 table #29: started
+2025/10/21-04:40:43.000 33aa1 Level-0 table #29: 14489 bytes OK
+2025/10/21-04:40:43.002 33aa1 Delete type=0 #25
