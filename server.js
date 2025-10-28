@@ -153,44 +153,36 @@ const upload = multer({
 });
 
 // Database setup with proper path and error handling
-// Ensure data directory exists (for persistent storage)
-const dbDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dbDir)) {
-  try {
-    fs.mkdirSync(dbDir, { recursive: true });
-    console.log('✅ Created database directory:', dbDir);
-  } catch (err) {
-    console.error('⚠️  Could not create data directory:', err.message);
-  }
-}
-
-// Use persistent DB if possible, fallback to in-memory for read-only filesystems
-let dbPath;
+// Try persistent DB first, fallback to in-memory if filesystem is read-only
 let db;
+let usingInMemory = false;
 
+// Ensure data directory exists
+const dbDir = path.join(__dirname, 'data');
 try {
-  dbPath = path.join(dbDir, 'wa-bot.db');
-  console.log('📁 Attempting database path:', dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log('✅ Created database directory');
+  }
   
-  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-      console.error('⚠️  Persistent DB failed, using in-memory:', err.message);
-      // Fallback to in-memory database for read-only filesystems (like some cloud platforms)
-      db = new sqlite3.Database(':memory:', (memErr) => {
-        if (memErr) {
-          console.error('❌ Database initialization failed completely:', memErr);
-          process.exit(1);
-        }
-        console.log('✅ Using in-memory SQLite database (data will not persist)');
-      });
-    } else {
-      console.log('✅ Connected to persistent SQLite database');
-    }
-  });
+  // Try to create persistent database
+  const dbPath = path.join(dbDir, 'wa-bot.db');
+  console.log('📁 Database path:', dbPath);
+  
+  // Test if we can write to the directory
+  const testFile = path.join(dbDir, '.write-test');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+  
+  // Directory is writable, use persistent DB
+  db = new sqlite3.Database(dbPath);
+  console.log('✅ Using persistent SQLite database');
 } catch (error) {
-  console.error('⚠️  Database error, using in-memory fallback:', error.message);
+  // Filesystem is read-only or error occurred, use in-memory database
+  console.error('⚠️  Cannot use persistent storage:', error.message);
+  console.log('📝 Using in-memory database (data will not persist between restarts)');
   db = new sqlite3.Database(':memory:');
-  console.log('✅ Using in-memory SQLite database');
+  usingInMemory = true;
 }
 
 // Initialize database tables
